@@ -31,24 +31,24 @@ function modify_files {
         echo "pvemanagerlib.js already modified."
     else
         sed -i "/PVE Manager Version/a\\
-        {\
-            itemId: 'thermal',\
-            colspan: 2,\
-            printBar: false,\
-            title: gettext('CPU Thermal State'),\
-            textField: 'thermalstate',\
-            renderer:function(value){\
-                let objValue = JSON.parse(value);\
-                let cores = objValue[\"coretemp-isa-0000\"];\
-                let items = Object.keys(cores).filter(item => /Core/.test(item));\
-                let str = '';\
-                items.forEach((x, idx) => {\
-                    str += cores[x][\`temp\${idx+2}_input\`] + ' ';\
-                });\
-                str += '°C';\
-                return str;\
-            }\
-        }," "$PVE_MANAGER_JS"
+    {\
+        itemId: 'thermal',\
+        colspan: 2,\
+        printBar: false,\
+        title: gettext('CPU Thermal State'),\
+        textField: 'thermalstate',\
+        renderer:function(value){\
+            let objValue = JSON.parse(value);\
+            let cores = objValue[\"coretemp-isa-0000\"];\
+            let items = Object.keys(cores).filter(item => /Core/.test(item));\
+            let str = '';\
+            items.forEach((x, idx) => {\
+                str += cores[x][\`temp\${idx+2}_input\`] + ' ';\
+            });\
+            str += '°C';\
+            return str;\
+        }\
+    }," "$PVE_MANAGER_JS"
     fi
 }
 
