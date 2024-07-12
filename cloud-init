@@ -22,27 +22,55 @@ echo "Setting timezone to Asia/Seoul..."
 timedatectl set-timezone Asia/Seoul
 echo "Timezone set to Asia/Seoul."
 
-
+# .bashrc 파일 다운로드
+echo "Downloading .bashrc from GitHub..."
 curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
+echo ".bashrc downloaded and applied."
 
-
-# 필수 패키지 설치 (기존 설치 여부를 체크하지 않음)
-echo "Installing essential packages..."
-apt install cloud-init vim net-tools qemu-guest-agent -y
-
-# qemu-guest-agent 서비스 활성화 (기존 설정이 없는 경우에만 활성화)
-if ! systemctl is-enabled qemu-guest-agent >/dev/null; then
-    echo "Enabling qemu-guest-agent service..."
-    systemctl enable qemu-guest-agent
-    echo "qemu-guest-agent service enabled."
+# 필수 패키지 설치 (기존 설치 여부를 체크함)
+if ! command -v cloud-init &> /dev/null; then
+    echo "Installing cloud-init..."
+    apt install cloud-init -y
+    echo "cloud-init installed."
+else
+    echo "cloud-init is already installed. Skipping installation."
 fi
 
-# Docker 설치 (기존 설치 여부를 체크하지 않음)
-echo "Installing Docker..."
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-systemctl enable docker
-echo "Docker installed and enabled."
+if ! command -v vim &> /dev/null; then
+    echo "Installing vim..."
+    apt install vim -y
+    echo "vim installed."
+else
+    echo "vim is already installed. Skipping installation."
+fi
+
+if ! command -v net-tools &> /dev/null; then
+    echo "Installing net-tools..."
+    apt install net-tools -y
+    echo "net-tools installed."
+else
+    echo "net-tools is already installed. Skipping installation."
+fi
+
+if ! command -v qemu-guest-agent &> /dev/null; then
+    echo "Installing qemu-guest-agent..."
+    apt install qemu-guest-agent -y
+    systemctl enable qemu-guest-agent
+    echo "qemu-guest-agent installed and enabled."
+else
+    echo "qemu-guest-agent is already installed. Skipping installation."
+fi
+
+# Docker 설치 (기존 설치 여부를 체크함)
+if ! command -v docker &> /dev/null; then
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    systemctl enable docker
+    echo "Docker installed and enabled."
+else
+    echo "Docker is already installed. Skipping installation."
+fi
 
 ## Dockge 설정
 # Dockge 관련 디렉토리 생성 및 설정
