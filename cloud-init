@@ -10,74 +10,83 @@ service_enabled() {
     systemctl is-enabled "$1" >/dev/null 2>&1
 }
 
-# 호스트네임 입력 받기
-read -p "Enter hostname for this machine: " hostname
-hostnamectl set-hostname "$hostname"
+# 포어그라운드에서 실행할 부분
+foreground_tasks() {
+    echo "Starting foreground tasks..."
+    # 호스트네임 입력 받기
+    read -p "Enter hostname for this machine: " hostname
+    hostnamectl set-hostname "$hostname"
 
-# IP 주소 입력 받기
-read -p "Enter static IP address (e.g., 192.168.1.100): " static_ip
+    # IP 주소 입력 받기
+    read -p "Enter static IP address (e.g., 192.168.1.100): " static_ip
 
-# 게이트웨이 주소 입력 받기
-read -p "Enter gateway address (e.g., 192.168.1.1): " gateway_ip
+    # 게이트웨이 주소 입력 받기
+    read -p "Enter gateway address (e.g., 192.168.1.1): " gateway_ip
 
-# 패키지 업데이트
-apt update && apt upgrade -y
+    # 패키지 업데이트
+    echo "Updating system packages..."
+    apt update && apt upgrade -y
 
-# 한국 타임존 설정
-timedatectl set-timezone Asia/Seoul
+    # 한국 타임존 설정
+    echo "Setting timezone to Asia/Seoul..."
+    timedatectl set-timezone Asia/Seoul
 
-# .bashrc 파일 적용
-curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
+    # .bashrc 파일 다운로드
+    echo "Downloading .bashrc from GitHub..."
+    curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
 
-# 필수 패키지 설치
-if ! package_installed "cloud-init"; then
-    apt install cloud-init -y
-fi
+    # 필수 패키지 설치
+    echo "Installing essential packages..."
+    if ! package_installed "cloud-init"; then
+        apt install cloud-init -y
+    fi
 
-if ! package_installed "vim"; then
-    apt install vim -y
-fi
+    if ! package_installed "vim"; then
+        apt install vim -y
+    fi
 
-if ! package_installed "net-tools"; then
-    apt install net-tools -y
-fi
+    if ! package_installed "net-tools"; then
+        apt install net-tools -y
+    fi
 
-if ! package_installed "qemu-guest-agent"; then
-    apt install qemu-guest-agent -y
-fi
+    if ! package_installed "qemu-guest-agent"; then
+        apt install qemu-guest-agent -y
+    fi
 
-# qemu-guest-agent 서비스 활성화
-if ! service_enabled "qemu-guest-agent"; then
-    systemctl enable qemu-guest-agent
-fi
+    # qemu-guest-agent 서비스 활성화
+    echo "Enabling qemu-guest-agent service..."
+    if ! service_enabled "qemu-guest-agent"; then
+        systemctl enable qemu-guest-agent
+    fi
 
-# Docker 설치
-if ! command -v docker &> /dev/null; then
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-    systemctl enable docker
-fi
+    # Docker 설치
+    echo "Installing Docker..."
+    if ! command -v docker &> /dev/null; then
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+        systemctl enable docker
+    fi
 
-## Dockge 설정
-# Dockge 관련 디렉토리 생성 및 설정
-mkdir -p /opt/stacks /opt/dockge
-cd /opt/dockge
+    ## Dockge 설정
+    # Dockge 관련 디렉토리 생성 및 설정
+    echo "Configuring Dockge..."
+    mkdir -p /opt/stacks /opt/dockge
+    cd /opt/dockge
 
-# compose.yaml 파일 다운로드
-curl -o compose.yaml https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml
+    # compose.yaml 파일 다운로드
+    echo "Downloading compose.yaml for Dockge..."
+    curl -o compose.yaml https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml
 
-# Docker Compose를 사용하여 서버 시작
-docker compose up -d
+    # Docker Compose를 사용하여 서버 시작
+    echo "Starting Dockge server with Docker Compose..."
+    docker compose up -d
 
-# IP 주소 설정 (static_ip 변수로 입력 받은 주소와 gateway_ip 변수로 입력 받은 게이트웨이 주소로 설정)
-if [ ! -z "$static_ip" ] && [ ! -z "$gateway_ip" ]; then
-    if [ ! -f /etc/netplan/01-netcfg.yaml ]; then
-        cat <<EOF > /etc/netplan/01-netcfg.yaml
-network:
-  version: 2
-  ethernets:
-    eth0:
-      dhcp4: no
+    # IP 주소 설정 (static_ip 변수로 입력 받은 주소와 gateway_ip 변수로 입력 받은 게이트웨이 주소로 설정)
+    if [ ! -z "$static_ip" ] && [ ! -z "$gateway_ip" ]; then
+        if [ -f /etc/netplan/50-cloud-init.yaml ]; then
+            # 기존 설정 보존하면서 추가 설정 적용
+            echo "Adding static IP and gateway configuration to netplan..."
+            cat <<EOF | tee -a /etc/netplan/50-cloud-init.yaml
       addresses:
         - $static_ip/24
       routes:
@@ -89,14 +98,28 @@ network:
           - 8.8.4.4
 EOF
 
-        # 파일 권한 설정
-        chmod 600 /etc/netplan/01-netcfg.yaml
-
-        # 네트워크 설정 적용
-        netplan apply
-    else
-        echo "Netplan configuration file already exists. Skipping network configuration."
+            # 네트워크 설정 적용
+            echo "Applying network configuration..."
+            netplan apply
+        else
+            echo "Error: /etc/netplan/50-cloud-init.yaml not found."
+            echo "Network configuration not applied."
+        fi
     fi
-fi
 
-echo "Setup completed successfully."
+    echo "Foreground tasks completed."
+}
+
+# 백그라운드에서 실행할 부분
+background_tasks() {
+    # 이 부분에서 필요한 백그라운드 작업을 추가할 수 있습니다.
+    # 예를 들어, 로그 파일 생성 또는 추가적인 설정 파일 다운로드 등을 수행할 수 있습니다.
+    # 현재 이 예제에서는 추가적인 백그라운드 작업이 없어서 빈 함수로 남겨두었습니다.
+    echo "Background tasks started."
+}
+
+# 백그라운드 작업 실행
+background_tasks &
+
+# 포어그라운드 작업 실행
+foreground_tasks
