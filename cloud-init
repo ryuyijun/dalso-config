@@ -1,0 +1,26 @@
+#/bin/bash
+##패키지 최신버전으로 업데이트 
+apt update && apt upgrade -y
+
+##필수(?) 패키지 설치
+
+apt install vim net-tools qemu-guest-agent
+
+systemctl enable qemu-guest-agent
+
+#Docker 설치
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+systemctl enable docker
+
+##dockge 설정
+# Create directories that store your stacks and stores Dockge's stack
+mkdir -p /opt/stacks /opt/dockge
+cd /opt/dockge
+
+# Download the compose.yaml
+curl https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml --output compose.yaml
+
+# Start the server
+docker compose up -d
