@@ -33,11 +33,10 @@ function modify_files {
     else
         # Find the line number after which to insert the new code
         line_number=$(grep -n "textField: 'pveversion'" $PVE_MANAGER_JS | cut -d: -f1)
-        line_number=$((line_number + 2))  # Insert after the third line after textField: 'pveversion'
+        line_number=$((line_number + 3))  # Insert after the third line after textField: 'pveversion'
 
         # Insert the new code using sed after the identified line number
         sed -i "${line_number}i \
-    },\
     {\
         itemId: 'thermal',\
         colspan: 2,\
@@ -54,7 +53,8 @@ function modify_files {
             });\
             str += '°C';\
             return str;\
-        }\" "$PVE_MANAGER_JS"
+        }\
+    }," "$PVE_MANAGER_JS"
         echo "pvemanagerlib.js modified successfully."
     fi
 }
