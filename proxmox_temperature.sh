@@ -54,8 +54,7 @@ function modify_files {
             });\
             str += '°C';\
             return str;\
-        }\
-    }," "$PVE_MANAGER_JS"
+        }\" "$PVE_MANAGER_JS"
         echo "pvemanagerlib.js modified successfully."
     fi
 }
