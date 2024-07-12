@@ -30,7 +30,7 @@ function modify_files {
     if grep -q "thermal" "$PVE_MANAGER_JS"; then
         echo "pvemanagerlib.js already modified."
     else
-        sed -i "/PVE Manager Version/a\\
+        sed -i "/Manager Version/a\\
     {\
         itemId: 'thermal',\
         colspan: 2,\
