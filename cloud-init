@@ -13,8 +13,10 @@ service_enabled() {
 # 포어그라운드에서 실행할 부분
 foreground_tasks() {
     echo "Starting foreground tasks..."
+
     # 호스트네임 입력 받기
     read -p "Enter hostname for this machine: " hostname
+    echo "Setting hostname to $hostname..."
     hostnamectl set-hostname "$hostname"
 
     # IP 주소 입력 받기
@@ -26,14 +28,17 @@ foreground_tasks() {
     # 패키지 업데이트
     echo "Updating system packages..."
     apt update && apt upgrade -y
+    echo "System packages updated."
 
     # 한국 타임존 설정
     echo "Setting timezone to Asia/Seoul..."
     timedatectl set-timezone Asia/Seoul
+    echo "Timezone set to Asia/Seoul."
 
     # .bashrc 파일 다운로드
     echo "Downloading .bashrc from GitHub..."
     curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
+    echo ".bashrc downloaded and applied."
 
     # 필수 패키지 설치
     echo "Installing essential packages..."
@@ -58,6 +63,7 @@ foreground_tasks() {
     if ! service_enabled "qemu-guest-agent"; then
         systemctl enable qemu-guest-agent
     fi
+    echo "qemu-guest-agent service enabled."
 
     # Docker 설치
     echo "Installing Docker..."
@@ -66,6 +72,7 @@ foreground_tasks() {
         sh get-docker.sh
         systemctl enable docker
     fi
+    echo "Docker installed and enabled."
 
     ## Dockge 설정
     # Dockge 관련 디렉토리 생성 및 설정
@@ -76,45 +83,56 @@ foreground_tasks() {
     # compose.yaml 파일 다운로드
     echo "Downloading compose.yaml for Dockge..."
     curl -o compose.yaml https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml
+    echo "compose.yaml downloaded."
 
     # Docker Compose를 사용하여 서버 시작
     echo "Starting Dockge server with Docker Compose..."
     docker compose up -d
+    echo "Dockge server started."
 
-    # IP 주소 설정 (static_ip 변수로 입력 받은 주소와 gateway_ip 변수로 입력 받은 게이트웨이 주소로 설정)
-    if [ ! -z "$static_ip" ] && [ ! -z "$gateway_ip" ]; then
-        if [ -f /etc/netplan/50-cloud-init.yaml ]; then
-            # 기존 설정 보존하면서 추가 설정 적용
-            echo "Adding static IP and gateway configuration to netplan..."
-            cat <<EOF | tee -a /etc/netplan/50-cloud-init.yaml
+    # 네트워크 설정 파일 변경
+    echo "Updating netplan configuration..."
+
+    # /etc/netplan/ 디렉토리에 있는 모든 .yaml 파일 처리
+    for file in /etc/netplan/*.yaml; do
+        echo "Processing $file..."
+
+        # 파일의 존재 확인
+        if [ -f "$file" ]; then
+            # 파일의 내용을 백업
+            cp "$file" "$file.backup"
+
+            # 새로운 설정 파일 생성
+            cat > "$file" <<EOF
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
       addresses:
         - $static_ip/24
-      routes:
-        - to: 0.0.0.0/0
-          via: $gateway_ip
+      gateway4: $gateway_ip
       nameservers:
         addresses:
           - 8.8.8.8
           - 8.8.4.4
 EOF
 
-            # 네트워크 설정 적용
-            echo "Applying network configuration..."
-            netplan apply
-        else
-            echo "Error: /etc/netplan/50-cloud-init.yaml not found."
-            echo "Network configuration not applied."
+            echo "New configuration applied to $file."
         fi
-    fi
+    done
+
+    # 네트워크 설정 적용
+    echo "Applying netplan configuration..."
+    netplan apply
+    echo "Netplan configuration applied."
 
     echo "Foreground tasks completed."
 }
 
 # 백그라운드에서 실행할 부분
 background_tasks() {
-    # 이 부분에서 필요한 백그라운드 작업을 추가할 수 있습니다.
-    # 예를 들어, 로그 파일 생성 또는 추가적인 설정 파일 다운로드 등을 수행할 수 있습니다.
-    # 현재 이 예제에서는 추가적인 백그라운드 작업이 없어서 빈 함수로 남겨두었습니다.
+    # 추가적인 백그라운드 작업이 필요하다면 여기에 추가할 수 있습니다.
     echo "Background tasks started."
 }
 
