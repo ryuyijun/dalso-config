@@ -73,10 +73,11 @@ foreground_tasks() {
     # netplan 설정 파일 경로
     netplan_file="/etc/netplan/01-netcfg.yaml"
 
-    # 파일의 존재 확인
+    # 기존 파일이 있는지 확인하고 백업 후 새로운 설정 파일 생성
     if [ -f "$netplan_file" ]; then
-        # 파일의 내용을 백업
+        # 기존 파일 백업
         cp "$netplan_file" "$netplan_file.backup"
+        echo "Backup of $netplan_file created."
 
         # 새로운 설정 파일 생성
         cat > "$netplan_file" <<EOF
