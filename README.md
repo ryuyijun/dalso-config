@@ -1,1 +1,1 @@
-# ds-cloud-init
+# dalso-config
