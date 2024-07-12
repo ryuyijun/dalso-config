@@ -5,6 +5,9 @@ apt update && apt upgrade -y
 #한국 타임존
 timedatectl set-timezone Asia/Seoul
 
+#.bashrc 적용
+curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
+
 ##필수(?) 패키지 설치
 
 apt install cloud-init vim net-tools qemu-guest-agent -y
