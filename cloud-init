@@ -4,7 +4,7 @@ apt update && apt upgrade -y
 
 ##필수(?) 패키지 설치
 
-apt install vim net-tools qemu-guest-agent -y
+apt install cloud-init vim net-tools qemu-guest-agent -y
 
 systemctl enable qemu-guest-agent
 
