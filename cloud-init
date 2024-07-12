@@ -1,20 +1,5 @@
 #!/bin/bash
 
-# 스피너 함수 정의
-spinner() {
-    local pid=$1
-    local delay=0.1
-    local spinstr='|/-\'
-    while ps -p $pid > /dev/null; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
-
 # 포어그라운드에서 실행할 부분
 foreground_tasks() {
     echo "Starting foreground tasks..."
@@ -31,16 +16,10 @@ foreground_tasks() {
     read -p "Enter gateway address (e.g., 192.168.1.1): " gateway_ip
 
     # 패키지 업데이트
-    if [ ! -f "/tmp/apt-updated" ]; then
-        echo "Updating system packages..."
-        apt update &> /dev/null &  # 백그라운드에서 실행
-        spinner $!  # 스피너 표시
-        apt upgrade -y
-        echo "System packages updated."
-        touch /tmp/apt-updated
-    else
-        echo "System packages are already up to date."
-    fi
+    echo "Updating system packages..."
+    apt update
+    apt upgrade -y
+    echo "System packages updated."
 
     # 한국 타임존 설정
     echo "Setting timezone to Asia/Seoul..."
@@ -54,36 +33,18 @@ foreground_tasks() {
 
     # 필수 패키지 설치
     echo "Installing essential packages..."
-    if ! package_installed "cloud-init"; then
-        apt install cloud-init -y
-    fi
-
-    if ! package_installed "vim"; then
-        apt install vim -y
-    fi
-
-    if ! package_installed "net-tools"; then
-        apt install net-tools -y
-    fi
-
-    if ! package_installed "qemu-guest-agent"; then
-        apt install qemu-guest-agent -y
-    fi
+    apt install cloud-init vim net-tools qemu-guest-agent -y
 
     # qemu-guest-agent 서비스 활성화
     echo "Enabling qemu-guest-agent service..."
-    if ! service_enabled "qemu-guest-agent"; then
-        systemctl enable qemu-guest-agent
-    fi
+    systemctl enable qemu-guest-agent
     echo "qemu-guest-agent service enabled."
 
     # Docker 설치
     echo "Installing Docker..."
-    if ! command -v docker &> /dev/null; then
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
-        systemctl enable docker
-    fi
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    systemctl enable docker
     echo "Docker installed and enabled."
 
     ## Dockge 설정
@@ -102,27 +63,28 @@ foreground_tasks() {
     docker compose up -d
     echo "Dockge server started."
 
-    # 네트워크 설정 파일 변경
+    ## 네트워크 설정 변경
     echo "Updating netplan configuration..."
 
-    # 인터페이스 찾기
-    interface=$(find_interface)
-    echo "Found interface: $interface"
-
     # netplan 설정 파일 경로
-    netplan_file="/etc/netplan/01-netcfg.yaml"
+    netplan_dir="/etc/netplan"
 
-    # 파일의 존재 확인
-    if [ -f "$netplan_file" ]; then
-        # 파일의 내용을 백업
-        cp "$netplan_file" "$netplan_file.backup"
+    # 기존 설정 파일들을 찾아서 백업하고 새로운 설정 적용
+    for file in $netplan_dir/*.yaml; do
+        echo "Processing $file..."
 
-        # 새로운 설정 파일 생성
-        cat > "$netplan_file" <<EOF
+        # 파일의 존재 확인
+        if [ -f "$file" ]; then
+            # 기존 파일을 백업
+            cp "$file" "$file.backup$(date +%Y%m%d-%H%M%S)"
+            echo "Backup of $file created."
+
+            # 새로운 설정 파일 생성
+            cat > "$netplan_dir/01-netcfg.yaml" <<EOF
 network:
   version: 2
   ethernets:
-    $interface:
+    ens18:
       dhcp4: no
       addresses:
         - $static_ip/24
@@ -135,28 +97,17 @@ network:
           - 8.8.4.4
 EOF
 
-        echo "New configuration applied to $netplan_file."
+            echo "New netplan configuration applied to $netplan_dir/01-netcfg.yaml."
 
-        # 네트워크 설정 적용
-        echo "Applying netplan configuration..."
-        netplan apply
-        echo "Netplan configuration applied."
-    else
-        echo "Netplan configuration file $netplan_file not found."
-        echo "Aborting netplan configuration update."
-    fi
+            # 네트워크 설정 적용
+            echo "Applying netplan configuration..."
+            netplan apply
+            echo "Netplan configuration applied."
+        fi
+    done
 
     echo "Foreground tasks completed."
 }
-
-# 백그라운드에서 실행할 부분
-background_tasks() {
-    # 추가적인 백그라운드 작업이 필요하다면 여기에 추가할 수 있습니다.
-    echo "Background tasks started."
-}
-
-# 백그라운드 작업 실행
-background_tasks &
 
 # 포어그라운드 작업 실행
 foreground_tasks
