@@ -10,6 +10,14 @@ service_enabled() {
     systemctl is-enabled "$1" >/dev/null 2>&1
 }
 
+# 함수 정의: 인터페이스 이름 찾기
+find_interface() {
+    local interface
+    # 인터페이스 이름 찾기
+    interface=$(ip addr | awk '/^[0-9]+:/ {current=$2} /inet / {print current; exit}' | sed 's/://')
+    echo "$interface"
+}
+
 # 포어그라운드에서 실행할 부분
 foreground_tasks() {
     echo "Starting foreground tasks..."
@@ -93,39 +101,46 @@ foreground_tasks() {
     # 네트워크 설정 파일 변경
     echo "Updating netplan configuration..."
 
-    # /etc/netplan/ 디렉토리에 있는 모든 .yaml 파일 처리
-    for file in /etc/netplan/*.yaml; do
-        echo "Processing $file..."
+    # 인터페이스 찾기
+    interface=$(find_interface)
+    echo "Found interface: $interface"
 
-        # 파일의 존재 확인
-        if [ -f "$file" ]; then
-            # 파일의 내용을 백업
-            cp "$file" "$file.backup"
+    # netplan 설정 파일 경로
+    netplan_file="/etc/netplan/01-netcfg.yaml"
 
-            # 새로운 설정 파일 생성
-            cat > "$file" <<EOF
+    # 파일의 존재 확인
+    if [ -f "$netplan_file" ]; then
+        # 파일의 내용을 백업
+        cp "$netplan_file" "$netplan_file.backup"
+
+        # 새로운 설정 파일 생성
+        cat > "$netplan_file" <<EOF
 network:
   version: 2
   ethernets:
-    eth0:
+    $interface:
       dhcp4: no
       addresses:
         - $static_ip/24
-      gateway4: $gateway_ip
+      routes:
+        - to: 0.0.0.0/0
+          via: $gateway_ip
       nameservers:
         addresses:
           - 8.8.8.8
           - 8.8.4.4
 EOF
 
-            echo "New configuration applied to $file."
-        fi
-    done
+        echo "New configuration applied to $netplan_file."
 
-    # 네트워크 설정 적용
-    echo "Applying netplan configuration..."
-    netplan apply
-    echo "Netplan configuration applied."
+        # 네트워크 설정 적용
+        echo "Applying netplan configuration..."
+        netplan apply
+        echo "Netplan configuration applied."
+    else
+        echo "Netplan configuration file $netplan_file not found."
+        echo "Aborting netplan configuration update."
+    fi
 
     echo "Foreground tasks completed."
 }
