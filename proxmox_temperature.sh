@@ -22,33 +22,40 @@ function modify_files {
     if grep -q "thermalstate" "$NODES_PM"; then
         echo "Nodes.pm already modified."
     else
-        sed -i "/version_text/a\\
-    \$res->{thermalstate} = \`sensors -j\`;" "$NODES_PM"
+        sed -i "/version_text/a \
+\$res->{thermalstate} = \`sensors -j\`;" "$NODES_PM"
+        echo "Nodes.pm modified successfully."
     fi
 
     echo "Modifying /usr/share/pve-manager/js/pvemanagerlib.js..."
     if grep -q "thermal" "$PVE_MANAGER_JS"; then
         echo "pvemanagerlib.js already modified."
     else
-        sed -i "/Manager Version/a\\
-    {\
-        itemId: 'thermal',\
-        colspan: 2,\
-        printBar: false,\
-        title: gettext('CPU Thermal State'),\
-        textField: 'thermalstate',\
-        renderer:function(value){\
-            let objValue = JSON.parse(value);\
-            let cores = objValue[\"coretemp-isa-0000\"];\
-            let items = Object.keys(cores).filter(item => /Core/.test(item));\
-            let str = '';\
-            items.forEach((x, idx) => {\
-                str += cores[x][\`temp\${idx+2}_input\`] + ' ';\
-            });\
-            str += '°C';\
-            return str;\
-        }\
-    }," "$PVE_MANAGER_JS"
+        # Find the line number after which to insert the new code
+        line_number=$(grep -n "itemId: 'version'" $PVE_MANAGER_JS | cut -d: -f1)
+        line_number=$((line_number + 1))
+
+        # Insert the new code using sed
+        sed -i "${line_number}i \\
+        {\
+            itemId: 'thermal',\
+            colspan: 2,\
+            printBar: false,\
+            title: gettext('CPU Thermal State'),\
+            textField: 'thermalstate',\
+            renderer:function(value){\
+                let objValue = JSON.parse(value);\
+                let cores = objValue[\"coretemp-isa-0000\"];\
+                let items = Object.keys(cores).filter(item => /Core/.test(item));\
+                let str = '';\
+                items.forEach((x, idx) => {\
+                    str += cores[x][\`temp\${idx+2}_input\`] + ' ';\
+                });\
+                str += '°C';\
+                return str;\
+            }\
+        }," "$PVE_MANAGER_JS"
+        echo "pvemanagerlib.js modified successfully."
     fi
 }
 
@@ -57,6 +64,7 @@ function restore_files {
     if [ -f $BACKUP_DIR/Nodes.pm.bak ] && [ -f $BACKUP_DIR/pvemanagerlib.js.bak ]; then
         cp $BACKUP_DIR/Nodes.pm.bak $NODES_PM
         cp $BACKUP_DIR/pvemanagerlib.js.bak $PVE_MANAGER_JS
+        echo "Files restored successfully."
     else
         echo "Backup files not found. Cannot restore."
         exit 1
@@ -69,7 +77,7 @@ function restart_pveproxy {
 }
 
 echo "Choose an option:"
-echo "1) Install and modify"
+echo "1) Install lm-sensors and modify files"
 echo "2) Restore original files"
 read -p "Enter choice [1 or 2]: " choice
 
