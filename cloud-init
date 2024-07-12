@@ -2,6 +2,9 @@
 ##패키지 최신버전으로 업데이트 
 apt update && apt upgrade -y
 
+#한국 타임존
+timedatectl set-timezone Asia/Seoul
+
 ##필수(?) 패키지 설치
 
 apt install cloud-init vim net-tools qemu-guest-agent -y
