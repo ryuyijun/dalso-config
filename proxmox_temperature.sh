@@ -35,26 +35,25 @@ function modify_files {
         line_number=$(grep -n "itemId: 'version'" $PVE_MANAGER_JS | cut -d: -f1)
         line_number=$((line_number + 1))
 
-        # Insert the new code using sed
-        sed -i "${line_number}i \\
-        {\
-            itemId: 'thermal',\
-            colspan: 2,\
-            printBar: false,\
-            title: gettext('CPU Thermal State'),\
-            textField: 'thermalstate',\
-            renderer:function(value){\
-                let objValue = JSON.parse(value);\
-                let cores = objValue[\"coretemp-isa-0000\"];\
-                let items = Object.keys(cores).filter(item => /Core/.test(item));\
-                let str = '';\
-                items.forEach((x, idx) => {\
-                    str += cores[x][\`temp\${idx+2}_input\`] + ' ';\
-                });\
-                str += '°C';\
-                return str;\
-            }\
-        }," "$PVE_MANAGER_JS"
+        # Insert the new code using sed after the closing curly brace of 'version' item
+        sed -i "${line_number}s/^/    },\n    {\
+        itemId: 'thermal',\
+        colspan: 2,\
+        printBar: false,\
+        title: gettext('CPU Thermal State'),\
+        textField: 'thermalstate',\
+        renderer:function(value){\
+            let objValue = JSON.parse(value);\
+            let cores = objValue[\"coretemp-isa-0000\"];\
+            let items = Object.keys(cores).filter(item => /Core/.test(item));\
+            let str = '';\
+            items.forEach((x, idx) => {\
+                str += cores[x][\`temp\${idx+2}_input\`] + ' ';\
+            });\
+            str += '°C';\
+            return str;\
+        }\
+    },/" "$PVE_MANAGER_JS"
         echo "pvemanagerlib.js modified successfully."
     fi
 }
