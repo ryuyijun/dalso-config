@@ -77,8 +77,8 @@ function restart_pveproxy {
 }
 
 echo "Choose an option:"
-echo "1) Install lm-sensors and modify files"
-echo "2) Restore original files"
+echo "1) Install lm-sensors, modify files, and restart pveproxy"
+echo "2) Restore original files and restart pveproxy"
 read -p "Enter choice [1 or 2]: " choice
 
 case $choice in
@@ -86,12 +86,12 @@ case $choice in
         install_lm_sensors
         modify_files
         restart_pveproxy
-        echo "Installation and modification completed successfully."
+        echo "Installation, modification, and service restart completed successfully."
         ;;
     2)
         restore_files
         restart_pveproxy
-        echo "Restoration completed successfully."
+        echo "Restoration and service restart completed successfully."
         ;;
     *)
         echo "Invalid choice."
