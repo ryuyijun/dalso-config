@@ -24,7 +24,7 @@ echo "Timezone set to Asia/Seoul."
 
 # .bashrc 파일 다운로드
 echo "Downloading .bashrc from GitHub..."
-curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
+curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/dalso-config/main/.bashrc
 echo ".bashrc downloaded and applied."
 
 # 필수 패키지 설치 (기존 설치 여부를 체크함)
