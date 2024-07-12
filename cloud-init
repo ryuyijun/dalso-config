@@ -1,32 +1,66 @@
-#/bin/bash
-##패키지 최신버전으로 업데이트 
+#!/bin/bash
+
+# 호스트네임 입력 받기
+read -p "Enter hostname for this machine: " hostname
+hostnamectl set-hostname $hostname
+
+# IP 주소 입력 받기
+read -p "Enter static IP address (e.g., 192.168.1.100): " static_ip
+
+# 게이트웨이 주소 입력 받기
+read -p "Enter gateway address (e.g., 192.168.1.1): " gateway_ip
+
+# 패키지 최신 버전으로 업데이트
 apt update && apt upgrade -y
 
-#한국 타임존
+# 한국 타임존 설정
 timedatectl set-timezone Asia/Seoul
 
-#.bashrc 적용
+# .bashrc 파일 적용
 curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
 
-##필수(?) 패키지 설치
-
+# 필수 패키지 설치
 apt install cloud-init vim net-tools qemu-guest-agent -y
 
+# qemu-guest-agent 서비스 활성화
 systemctl enable qemu-guest-agent
 
-#Docker 설치
+# Docker 설치
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
+# Docker 서비스 활성화
 systemctl enable docker
 
-##dockge 설정
-# Create directories that store your stacks and stores Dockge's stack
+## Dockge 설정
+# Dockge 관련 디렉토리 생성
 mkdir -p /opt/stacks /opt/dockge
 cd /opt/dockge
 
-# Download the compose.yaml
+# compose.yaml 파일 다운로드
 curl https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml --output compose.yaml
 
-# Start the server
+# Docker Compose를 사용하여 서버 시작
 docker compose up -d
+
+# IP 주소 설정 (static_ip 변수로 입력 받은 주소와 gateway_ip 변수로 입력 받은 게이트웨이 주소로 설정)
+if [ ! -z "$static_ip" ]; then
+    cat <<EOF > /etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses:
+        - $static_ip/24
+      gateway4: $gateway_ip
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+EOF
+
+    netplan apply
+fi
+
+echo "Setup completed successfully."
