@@ -66,7 +66,7 @@ foreground_tasks() {
     ## 네트워크 설정 변경
     echo "Updating netplan configuration..."
 
-    # 인터페이스 찾기
+    # 인터페이스 찾기 (첫 번째로 나오는 인터페이스를 사용)
     interface=$(ip addr | awk '/^[0-9]+:/ {current=$2} /inet / {print current; exit}' | sed 's/://')
     echo "Found interface: $interface"
 
