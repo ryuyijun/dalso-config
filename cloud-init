@@ -1,21 +1,18 @@
 #!/bin/bash
 
-# 함수 정의: 패키지 설치 여부 확인
-package_installed() {
-    dpkg -s "$1" >/dev/null 2>&1
-}
-
-# 함수 정의: 서비스 활성화 여부 확인
-service_enabled() {
-    systemctl is-enabled "$1" >/dev/null 2>&1
-}
-
-# 함수 정의: 인터페이스 이름 찾기
-find_interface() {
-    local interface
-    # 인터페이스 이름 찾기
-    interface=$(ip addr | awk '/^[0-9]+:/ {current=$2} /inet / {print current; exit}' | sed 's/://')
-    echo "$interface"
+# 스피너 함수 정의
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+    while ps -p $pid > /dev/null; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
 }
 
 # 포어그라운드에서 실행할 부분
@@ -34,9 +31,16 @@ foreground_tasks() {
     read -p "Enter gateway address (e.g., 192.168.1.1): " gateway_ip
 
     # 패키지 업데이트
-    echo "Updating system packages..."
-    apt update && apt upgrade -y
-    echo "System packages updated."
+    if [ ! -f "/tmp/apt-updated" ]; then
+        echo "Updating system packages..."
+        apt update &> /dev/null &  # 백그라운드에서 실행
+        spinner $!  # 스피너 표시
+        apt upgrade -y
+        echo "System packages updated."
+        touch /tmp/apt-updated
+    else
+        echo "System packages are already up to date."
+    fi
 
     # 한국 타임존 설정
     echo "Setting timezone to Asia/Seoul..."
