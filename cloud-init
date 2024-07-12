@@ -1,8 +1,18 @@
 #!/bin/bash
 
+# 함수 정의: 패키지 설치 여부 확인
+package_installed() {
+    dpkg -s "$1" >/dev/null 2>&1
+}
+
+# 함수 정의: 서비스 활성화 여부 확인
+service_enabled() {
+    systemctl is-enabled "$1" >/dev/null 2>&1
+}
+
 # 호스트네임 입력 받기
 read -p "Enter hostname for this machine: " hostname
-hostnamectl set-hostname $hostname
+hostnamectl set-hostname "$hostname"
 
 # IP 주소 입력 받기
 read -p "Enter static IP address (e.g., 192.168.1.100): " static_ip
@@ -10,7 +20,7 @@ read -p "Enter static IP address (e.g., 192.168.1.100): " static_ip
 # 게이트웨이 주소 입력 받기
 read -p "Enter gateway address (e.g., 192.168.1.1): " gateway_ip
 
-# 패키지 최신 버전으로 업데이트
+# 패키지 업데이트
 apt update && apt upgrade -y
 
 # 한국 타임존 설정
@@ -20,32 +30,49 @@ timedatectl set-timezone Asia/Seoul
 curl -o /root/.bashrc https://raw.githubusercontent.com/dalso0418/ds-cloud-init/main/.bashrc
 
 # 필수 패키지 설치
-apt install cloud-init vim net-tools qemu-guest-agent -y
+if ! package_installed "cloud-init"; then
+    apt install cloud-init -y
+fi
+
+if ! package_installed "vim"; then
+    apt install vim -y
+fi
+
+if ! package_installed "net-tools"; then
+    apt install net-tools -y
+fi
+
+if ! package_installed "qemu-guest-agent"; then
+    apt install qemu-guest-agent -y
+fi
 
 # qemu-guest-agent 서비스 활성화
-systemctl enable qemu-guest-agent
+if ! service_enabled "qemu-guest-agent"; then
+    systemctl enable qemu-guest-agent
+fi
 
 # Docker 설치
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Docker 서비스 활성화
-systemctl enable docker
+if ! command -v docker &> /dev/null; then
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    systemctl enable docker
+fi
 
 ## Dockge 설정
-# Dockge 관련 디렉토리 생성
+# Dockge 관련 디렉토리 생성 및 설정
 mkdir -p /opt/stacks /opt/dockge
 cd /opt/dockge
 
 # compose.yaml 파일 다운로드
-curl https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml --output compose.yaml
+curl -o compose.yaml https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml
 
 # Docker Compose를 사용하여 서버 시작
 docker compose up -d
 
 # IP 주소 설정 (static_ip 변수로 입력 받은 주소와 gateway_ip 변수로 입력 받은 게이트웨이 주소로 설정)
-if [ ! -z "$static_ip" ]; then
-    cat <<EOF > /etc/netplan/01-netcfg.yaml
+if [ ! -z "$static_ip" ] && [ ! -z "$gateway_ip" ]; then
+    if [ ! -f /etc/netplan/01-netcfg.yaml ]; then
+        cat <<EOF > /etc/netplan/01-netcfg.yaml
 network:
   version: 2
   ethernets:
@@ -53,14 +80,23 @@ network:
       dhcp4: no
       addresses:
         - $static_ip/24
-      gateway4: $gateway_ip
+      routes:
+        - to: 0.0.0.0/0
+          via: $gateway_ip
       nameservers:
         addresses:
           - 8.8.8.8
           - 8.8.4.4
 EOF
 
-    netplan apply
+        # 파일 권한 설정
+        chmod 600 /etc/netplan/01-netcfg.yaml
+
+        # 네트워크 설정 적용
+        netplan apply
+    else
+        echo "Netplan configuration file already exists. Skipping network configuration."
+    fi
 fi
 
 echo "Setup completed successfully."
