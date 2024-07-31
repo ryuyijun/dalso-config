@@ -47,6 +47,7 @@ echo "Detected OS: $OS $VER"
 install_zabbix_repo
 install_and_configure_zabbix_agent
 
+# Prompt for the Zabbix server address
 read -p "Enter the Zabbix server address: " server_address
 update_zabbix_config $server_address
 
