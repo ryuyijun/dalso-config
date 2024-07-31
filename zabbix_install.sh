@@ -24,11 +24,19 @@ check_zabbix_agent_installed() {
 # Function to install Zabbix repository
 install_zabbix_repo() {
     if [[ "$VER" == "22.04" ]]; then
+        if [ -f zabbix-release_7.0-2+ubuntu22.04_all.deb ]; then
+            rm zabbix-release_7.0-2+ubuntu22.04_all.deb
+        fi
         wget -q https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu22.04_all.deb
         dpkg -i zabbix-release_7.0-2+ubuntu22.04_all.deb
+        rm zabbix-release_7.0-2+ubuntu22.04_all.deb
     elif [[ "$VER" == "24.04" ]]; then
+        if [ -f zabbix-release_7.0-2+ubuntu24.04_all.deb ]; then
+            rm zabbix-release_7.0-2+ubuntu24.04_all.deb
+        fi
         wget -q https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu24.04_all.deb
         dpkg -i zabbix-release_7.0-2+ubuntu24.04_all.deb
+        rm zabbix-release_7.0-2+ubuntu24.04_all.deb
     else
         echo "Unsupported Ubuntu version: $VER"
         exit 1
