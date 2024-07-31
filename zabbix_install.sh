@@ -12,13 +12,22 @@ detect_os_version() {
     fi
 }
 
+# Function to check if Zabbix agent is installed
+check_zabbix_agent_installed() {
+    if dpkg -l | grep -q zabbix-agent2; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Function to install Zabbix repository
 install_zabbix_repo() {
     if [[ "$VER" == "22.04" ]]; then
-        wget https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu22.04_all.deb
+        wget -q https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu22.04_all.deb
         dpkg -i zabbix-release_7.0-2+ubuntu22.04_all.deb
     elif [[ "$VER" == "24.04" ]]; then
-        wget https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu24.04_all.deb
+        wget -q https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu24.04_all.deb
         dpkg -i zabbix-release_7.0-2+ubuntu24.04_all.deb
     else
         echo "Unsupported Ubuntu version: $VER"
@@ -42,13 +51,19 @@ update_zabbix_config() {
 }
 
 # Main script
+read -p "Enter the Zabbix server address: " server_address
+
 detect_os_version
 echo "Detected OS: $OS $VER"
-install_zabbix_repo
-install_and_configure_zabbix_agent
 
-# Prompt for the Zabbix server address
-read -p "Enter the Zabbix server address: " server_address
+if check_zabbix_agent_installed; then
+    echo "Zabbix Agent2 is already installed. Updating configuration..."
+else
+    echo "Zabbix Agent2 is not installed. Installing..."
+    install_zabbix_repo
+    install_and_configure_zabbix_agent
+fi
+
 update_zabbix_config $server_address
 
 echo "Zabbix Agent2 installation and configuration complete."
