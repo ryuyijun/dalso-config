@@ -23,7 +23,13 @@ check_zabbix_agent_installed() {
 
 # Function to get installed Zabbix agent version
 get_zabbix_agent_version() {
-    zabbix_agent_version=$(zabbix_agent2 -V | grep "Zabbix Agent" | awk '{print $3}')
+    # Attempt to get the version using the command
+    if zabbix_agent2 -V &> /dev/null; then
+        zabbix_agent_version=$(zabbix_agent2 -V | grep "Zabbix Agent" | awk '{print $3}')
+    else
+        # Fallback to package manager if command version info is not available
+        zabbix_agent_version=$(dpkg -l | grep zabbix-agent2 | awk '{print $3}')
+    fi
 }
 
 # Function to install Zabbix repository
