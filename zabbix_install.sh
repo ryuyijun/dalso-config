@@ -21,6 +21,11 @@ check_zabbix_agent_installed() {
     fi
 }
 
+# Function to get installed Zabbix agent version
+get_zabbix_agent_version() {
+    zabbix_agent_version=$(zabbix_agent2 -V | grep "Zabbix Agent" | awk '{print $3}')
+}
+
 # Function to install Zabbix repository
 install_zabbix_repo() {
     if [[ "$VER" == "22.04" ]]; then
@@ -74,4 +79,18 @@ fi
 
 update_zabbix_config $server_address
 
+# Retrieve and display additional information
+host_ip=$(hostname -I | awk '{print $1}')
+system_info=$(uname -a)
+if check_zabbix_agent_installed; then
+    get_zabbix_agent_version
+    echo "Zabbix Agent2 version: $zabbix_agent_version"
+else
+    echo "Failed to detect Zabbix Agent2 version."
+fi
+
+echo "OS: $OS $VER"
+echo "Zabbix Server: $server_address"
+echo "Host IP: $host_ip"
+echo "System Information: $system_info"
 echo "Zabbix Agent2 installation and configuration complete."
