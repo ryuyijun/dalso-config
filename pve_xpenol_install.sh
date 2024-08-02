@@ -145,4 +145,21 @@ qm set $VMID --args "-drive 'if=none,id=synoboot,format=raw,file=$IMG_PATH' -dev
 # VM 시작
 qm start $VMID
 
+# 요약 정보 출력
+echo "-----------------------------------------------------"
+echo "VM 생성 및 시작이 완료되었습니다!"
+echo "VM ID: $VMID"
+echo "VM 이름: $VMNAME"
+echo "CPU 코어 수: $CORES"
+echo "RAM 크기: $RAM MB"
+echo "네트워크 브릿지: $NET_BRIDGE"
+echo "이미지 파일: $IMG_PATH"
+echo "디스크 수: $DISK_COUNT"
+
+for (( i=0; i<$DISK_COUNT; i++ ))
+do
+    DISK_INFO=(${DISK_ARRAY[$i]})
+    echo "디스크 $((i+1)) - 타입: ${DISK_INFO[0]}, 스토리지: ${DISK_INFO[1]}, 크기: ${DISK_INFO[2]} GB"
+done
+
 echo "VM 생성 및 시작이 완료되었습니다!"
