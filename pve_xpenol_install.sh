@@ -61,10 +61,10 @@ validate_disk_count() {
 }
 
 # 사용자 입력 받기
-read -p "VM 번호를 입력하세요: " VMID
-read -p "VM 이름을 입력하세요: " VMNAME
-read -p "CPU 코어 수를 입력하세요: " CORES
-read -p "RAM 크기를 MB 단위로 입력하세요: " RAM
+read -p "VM 번호를 입력하세요 (숫자): " VMID
+read -p "VM 이름을 입력하세요 : " VMNAME
+read -p "CPU 코어 수를 입력하세요 : " CORES
+read -p "RAM 크기를 MB 단위로 입력하세요 (ex)4096=4G: " RAM
 
 # 현재 노드 이름 가져오기
 NODE=$(hostname)
@@ -92,21 +92,21 @@ do
             break
         fi
     done
-    read -p "스토리지 이름을 입력하세요: " STORAGE_NAME
+    read -p "스토리지 이름을 입력하세요 (ex. local-LVM): " STORAGE_NAME
     read -p "디스크 크기를 GB 단위로 입력하세요: " DISK_SIZE
     DISK_ARRAY+=("$DISK_TYPE $STORAGE_NAME $DISK_SIZE")
 done
 
 # 네트워크 브릿지 목록 출력
-echo "사용 가능한 네트워크 브릿지 목록:"
+echo "사용 가능한 네트워크 브릿지 목록 :"
 pvesh get /nodes/$NODE/network
 
 # 네트워크 브릿지 입력 받기
-read -p "사용할 네트워크 브릿지 이름을 입력하세요: " NET_BRIDGE
+read -p "사용할 네트워크 브릿지 이름을 입력하세요 (ex. vmbr0) : " NET_BRIDGE
 
 # 이미지 파일 선택
 echo "사용할 이미지 파일을 선택하세요:"
-echo "1. TinyCore (m-shell.img)"
+echo "1. m-shell (m-shell.img)"
 echo "2. RR (rr.img.zip)"
 read -p "선택 (1 또는 2): " IMAGE_CHOICE
 
