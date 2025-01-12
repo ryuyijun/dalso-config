@@ -118,8 +118,8 @@ if [ "$IMAGE_CHOICE" -eq 1 ]; then
     wget $IMG_URL -O /var/lib/vz/template/iso/m-shell.img.gz
     gunzip -f /var/lib/vz/template/iso/m-shell.img.gz
 elif [ "$IMAGE_CHOICE" -eq 2 ]; then
-    IMG_URL="https://github.com/RROrg/rr/releases/download/24.8.0/rr-24.8.0.img.zip"
-    IMG_ZIP_PATH="/var/lib/vz/template/iso/rr-24.8.0.img.zip"
+    IMG_URL="https://github.com/RROrg/rr/releases/download/25.1.0/rr-25.1.0.img.zip"
+    IMG_ZIP_PATH="/var/lib/vz/template/iso/rr-25.1.0.img.zip"
     IMG_PATH="/var/lib/vz/template/iso/rr.img"
     download_and_extract_image $IMG_URL $IMG_ZIP_PATH $IMG_PATH
 elif [ "$IMAGE_CHOICE" -eq 3 ]; then
